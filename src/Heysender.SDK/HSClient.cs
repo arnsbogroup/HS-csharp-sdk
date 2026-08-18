@@ -13,7 +13,7 @@ namespace Heysender.SDK
     /// Heysender C# SDK
     ///
     /// A comprehensive SDK for interacting with the Heysender API
-    /// Version: 0.9
+    /// Version: 0.9.1
     /// </summary>
 
     #region Exceptions
@@ -68,7 +68,7 @@ namespace Heysender.SDK
             var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{apiKey}:{apiSecret}"));
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("HS-csharp-sdk/0.9");
+            _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("HS-csharp-sdk/0.9.1");
 
             _jsonOptions = new JsonSerializerOptions
             {
@@ -174,6 +174,14 @@ namespace Heysender.SDK
             return await RequestAsync<DomainValidation>(HttpMethod.Get, $"/api/domains/{domain}/validate");
         }
 
+        /// <summary>
+        /// Get a single domain by its URL
+        /// </summary>
+        public async Task<Domain> GetDomainAsync(string domain)
+        {
+            return await RequestAsync<Domain>(HttpMethod.Get, $"/api/domains/{domain}");
+        }
+
         // ==================== SMTP USER METHODS ====================
 
         /// <summary>
@@ -220,6 +228,14 @@ namespace Heysender.SDK
         public async Task<SmtpUser> CreateSmtpUserAsync(int domainId, CreateSmtpUserRequest request)
         {
             return await RequestAsync<SmtpUser>(HttpMethod.Post, $"/api/smtp/{domainId}", request);
+        }
+
+        /// <summary>
+        /// Get a single SMTP user
+        /// </summary>
+        public async Task<SmtpUserDetail> GetSmtpUserAsync(int domainId, int userId)
+        {
+            return await RequestAsync<SmtpUserDetail>(HttpMethod.Get, $"/api/smtp/{domainId}/{userId}");
         }
 
         /// <summary>
@@ -444,6 +460,45 @@ namespace Heysender.SDK
     {
         [JsonPropertyName("data")]
         public List<SmtpUser> Data { get; set; }
+    }
+
+    /// <summary>
+    /// Response shape for GET /api/smtp/{domainId}/{id} — same fields as SmtpUser,
+    /// plus the domain relation the API eager-loads only on this endpoint.
+    /// </summary>
+    public class SmtpUserDetail
+    {
+        [JsonPropertyName("id")]
+        public int Id { get; set; }
+
+        [JsonPropertyName("domain_id")]
+        public int DomainId { get; set; }
+
+        [JsonPropertyName("smtp_email")]
+        public string SmtpEmail { get; set; }
+
+        [JsonPropertyName("anonymize_none")]
+        [JsonConverter(typeof(BoolOrIntConverter))]
+        public bool? AnonymizeNone { get; set; }
+
+        [JsonPropertyName("anonymize_all")]
+        [JsonConverter(typeof(BoolOrIntConverter))]
+        public bool? AnonymizeAll { get; set; }
+
+        [JsonPropertyName("anonymize_subject")]
+        [JsonConverter(typeof(BoolOrIntConverter))]
+        public bool? AnonymizeSubject { get; set; }
+
+        [JsonPropertyName("anonymize_content")]
+        [JsonConverter(typeof(BoolOrIntConverter))]
+        public bool? AnonymizeContent { get; set; }
+
+        [JsonPropertyName("anonymize_recipient")]
+        [JsonConverter(typeof(BoolOrIntConverter))]
+        public bool? AnonymizeRecipient { get; set; }
+
+        [JsonPropertyName("domain")]
+        public Domain Domain { get; set; }
     }
 
     public class CreateSmtpUserRequest
@@ -1051,6 +1106,10 @@ namespace Heysender.SDK
 
                 case JsonTokenType.Number:
                     return reader.GetInt32() != 0;
+
+                case JsonTokenType.String:
+                    var stringValue = reader.GetString();
+                    return stringValue == "1" || stringValue == "true";
 
                 default:
                     throw new JsonException($"Cannot convert {reader.TokenType} to boolean.");

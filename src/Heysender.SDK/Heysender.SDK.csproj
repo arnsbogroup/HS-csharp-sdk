@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Heysender.SDK</PackageId>
-    <Version>0.9.0</Version>
+    <Version>0.9.1</Version>
     <Company>Heysender ApS</Company>
 
     <RootNamespace>HS_csharp_sdk</RootNamespace>
